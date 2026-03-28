@@ -26,13 +26,3 @@ def decode_token(token: str):
         return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     except JWTError:
         return None
-```
-
-Sirf **2 lines change** hui hain:
-- `pwd_context.hash(password[:72])` — password 72 bytes tak limit
-- `pwd_context.verify(plain[:72], hashed)` — verify bhi same limit
-
-Aur `requirements.txt` mein bhi yeh fix karna zaroori hai:
-```
-bcrypt==4.0.1
-passlib[bcrypt]==1.7.4
