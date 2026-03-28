@@ -1,24 +1,15 @@
-{
-  "name": "outspark-frontend",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
-  },
-  "dependencies": {
-    "next": "14.0.0",
-    "react": "^18",
-    "react-dom": "^18",
-    "axios": "^1.6.0"
-  },
-  "devDependencies": {
-    "tailwindcss": "^3.3.0",
-    "postcss": "^8",
-    "autoprefixer": "^10",
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "typescript": "^5"
-  }
-}
+FROM python:3.13-slim
+
+WORKDIR /app
+
+COPY backend/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY backend/main.py .
+COPY backend/auth.py .
+COPY backend/models.py .
+COPY backend/schemas.py .
+COPY backend/database.py .
+
+EXPOSE 8000
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8000"]
