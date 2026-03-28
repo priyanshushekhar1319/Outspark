@@ -3,7 +3,7 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta
 import os
 
-SECRET_KEY = os.getenv("SECRET_KEY", "outspark_priyanshu_secret_2024_xK9mN3pQ")
+SECRET_KEY = os.getenv("SECRET_KEY", "outspark_priyanshu_secret_2024_xK9m3pQ")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 
