@@ -2,12 +2,10 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
-from typing import Optional, List
+from datetime import datetime
+from typing import List
 import models, schemas, auth
 from database import engine, get_db
-
-models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Outspark LinkedIn Review API", version="1.0.0")
 
@@ -20,6 +18,31 @@ app.add_middleware(
 )
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+@app.on_event("startup")
+def startup():
+    try:
+        models.Base.metadata.create_all(bind=engine)
+        from database import SessionLocal
+        db = SessionLocal()
+        admin = db.query(models.User).filter(models.User.email == "admin@outspark.com").first()
+        if not admin:
+            hashed = auth.hash_password("admin@123")
+            admin_user = models.User(
+                name="Priyanshu Admin",
+                email="admin@outspark.com",
+                hashed_password=hashed,
+                role="admin",
+                plan="enterprise",
+                created_at=datetime.utcnow()
+            )
+            db.add(admin_user)
+            db.commit()
+        db.close()
+        print("✅ Database connected and admin seeded!")
+    except Exception as e:
+        print(f"❌ Startup error: {e}")
+        raise e
 
 # ─── AUTH ───────────────────────────────────────────────
 @app.post("/api/register", response_model=schemas.UserOut)
@@ -92,7 +115,6 @@ def get_me(current_user: models.User = Depends(get_current_user)):
 # ─── PAYMENT (BYPASSED) ─────────────────────────────────
 @app.post("/api/payment/checkout")
 def checkout(payload: schemas.PaymentRequest, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    # Payment bypassed - directly upgrade user
     plan_map = {"basic": "basic", "pro": "pro", "enterprise": "enterprise"}
     current_user.plan = plan_map.get(payload.plan, "pro")
     db.commit()
@@ -156,22 +178,3 @@ def delete_user(user_id: int, db: Session = Depends(get_db), admin: models.User 
     db.delete(user)
     db.commit()
     return {"success": True}
-
-@app.on_event("startup")
-def seed_admin():
-    from database import SessionLocal
-    db = SessionLocal()
-    admin = db.query(models.User).filter(models.User.email == "admin@outspark.com").first()
-    if not admin:
-        hashed = auth.hash_password("admin@123")
-        admin_user = models.User(
-            name="Priyanshu Admin",
-            email="admin@outspark.com",
-            hashed_password=hashed,
-            role="admin",
-            plan="enterprise",
-            created_at=datetime.utcnow()
-        )
-        db.add(admin_user)
-        db.commit()
-    db.close()
