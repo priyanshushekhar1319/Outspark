@@ -105,7 +105,7 @@ Frontend runs at: **http://localhost:3000**
 
 | Role  | Email                  | Password   |
 |-------|------------------------|------------|
-| Admin | admin@outspark.com     | admin@123  |
+| Admin |      |   |
 | User  | Register at /signup    | your choice|
 
 ---
