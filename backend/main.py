@@ -36,7 +36,10 @@ def startup():
                 plan="enterprise",
                 created_at=datetime.utcnow()
             ))
-            db.commit()
+        else:
+            # Force reset admin password on every startup
+            admin.hashed_password = auth.hash_password("admin@123")
+        db.commit()
         db.close()
         print("Database ready!")
     except Exception as e:
