@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
@@ -9,4 +9,17 @@ COPY . .
 
 RUN npm run build
 
-CMD npm start
+EXPOSE 3000
+
+CMD ["npm", "start"]
+```
+
+Then go to Railway → **Frontend service → Settings:**
+
+- **Dockerfile Path:** `Dockerfile.frontend`
+- **Root Directory:** `frontend`
+- **Start Command:** leave empty (Dockerfile handles it)
+
+Also critically — go to **Variables** and make sure this exists:
+```
+NEXT_PUBLIC_API_URL = https://outspark-backend-production-ee3c.up.railway.app
