@@ -44,7 +44,7 @@ class ReviewOut(BaseModel):
         from_attributes = True
 
 class ReviewAdminOut(ReviewOut):
-    user_id: int
+    user_id: Optional[int]
     phone: str
 
 class ReviewStatusUpdate(BaseModel):

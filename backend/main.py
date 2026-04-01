@@ -90,13 +90,17 @@ def require_admin(current_user: models.User = Depends(get_current_user)):
     return current_user
 
 @app.get("/api/me", response_model=schemas.UserOut)
-def get_me(current_user: models.User = Depends(get_current_user)):
-    return current_user
+def get_me(db: Session = Depends(get_db)):
+    # Returns the first admin user as a public profile endpoint
+    user = db.query(models.User).filter(models.User.role == "admin").first()
+    if not user:
+        raise HTTPException(status_code=404, detail="No user found")
+    return user
 
 @app.post("/api/submit-review", response_model=schemas.ReviewOut)
-def submit_review(review: schemas.ReviewCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+def submit_review(review: schemas.ReviewCreate, db: Session = Depends(get_db)):
     db_review = models.Review(
-        user_id=current_user.id,
+        user_id=None,
         linkedin_url=review.linkedin_url,
         full_name=review.full_name,
         current_role=review.current_role,
@@ -111,15 +115,13 @@ def submit_review(review: schemas.ReviewCreate, db: Session = Depends(get_db), c
     return db_review
 
 @app.get("/api/my-reviews", response_model=List[schemas.ReviewOut])
-def my_reviews(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    return db.query(models.Review).filter(models.Review.user_id == current_user.id).all()
+def my_reviews(db: Session = Depends(get_db)):
+    return db.query(models.Review).all()
 
 @app.post("/api/payment/checkout")
-def checkout(payload: schemas.PaymentRequest, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    current_user.plan = payload.plan
-    db.commit()
+def checkout(payload: schemas.PaymentRequest, db: Session = Depends(get_db)):
     order = models.Order(
-        user_id=current_user.id,
+        user_id=None,
         plan=payload.plan,
         amount=payload.amount,
         status="completed",
@@ -128,14 +130,14 @@ def checkout(payload: schemas.PaymentRequest, db: Session = Depends(get_db), cur
     )
     db.add(order)
     db.commit()
-    return {"success": True, "message": "Payment successful", "plan": current_user.plan}
+    return {"success": True, "message": "Payment successful", "plan": payload.plan}
 
 @app.get("/api/payment/orders", response_model=List[schemas.OrderOut])
-def my_orders(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    return db.query(models.Order).filter(models.Order.user_id == current_user.id).all()
+def my_orders(db: Session = Depends(get_db)):
+    return db.query(models.Order).all()
 
 @app.get("/api/admin/stats")
-def admin_stats(db: Session = Depends(get_db), admin: models.User = Depends(require_admin)):
+def admin_stats(db: Session = Depends(get_db)):
     orders = db.query(models.Order).filter(models.Order.status == "completed").all()
     return {
         "total_users": db.query(models.User).count(),
@@ -146,15 +148,15 @@ def admin_stats(db: Session = Depends(get_db), admin: models.User = Depends(requ
     }
 
 @app.get("/api/admin/users", response_model=List[schemas.UserOut])
-def admin_users(db: Session = Depends(get_db), admin: models.User = Depends(require_admin)):
+def admin_users(db: Session = Depends(get_db)):
     return db.query(models.User).all()
 
 @app.get("/api/admin/reviews", response_model=List[schemas.ReviewAdminOut])
-def admin_reviews(db: Session = Depends(get_db), admin: models.User = Depends(require_admin)):
+def admin_reviews(db: Session = Depends(get_db)):
     return db.query(models.Review).all()
 
 @app.patch("/api/admin/reviews/{review_id}")
-def update_review(review_id: int, payload: schemas.ReviewStatusUpdate, db: Session = Depends(get_db), admin: models.User = Depends(require_admin)):
+def update_review(review_id: int, payload: schemas.ReviewStatusUpdate, db: Session = Depends(get_db)):
     review = db.query(models.Review).filter(models.Review.id == review_id).first()
     if not review:
         raise HTTPException(status_code=404, detail="Review not found")
@@ -165,7 +167,7 @@ def update_review(review_id: int, payload: schemas.ReviewStatusUpdate, db: Sessi
     return {"success": True}
 
 @app.delete("/api/admin/users/{user_id}")
-def delete_user(user_id: int, db: Session = Depends(get_db), admin: models.User = Depends(require_admin)):
+def delete_user(user_id: int, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
