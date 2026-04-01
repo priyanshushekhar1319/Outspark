@@ -1,34 +1,26 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import axios from 'axios';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const [user, setUser] = useState<any>(null);
   const [reviews, setReviews] = useState<any[]>([]);
   const [form, setForm] = useState({ linkedin_url:'', full_name:'', current_role:'', target_role:'', phone:'' });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) { router.push('/login'); return; }
-    const headers = { Authorization: `Bearer ${token}` };
-    axios.get(`${API}/api/me`, { headers }).then(r => setUser(r.data)).catch(() => router.push('/login'));
-    axios.get(`${API}/api/my-reviews`, { headers }).then(r => setReviews(r.data));
+    axios.get(`${API}/api/my-reviews`).then(r => setReviews(r.data)).catch(() => {});
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(`${API}/api/submit-review`, form, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.post(`${API}/api/submit-review`, form);
       setSubmitted(true);
-      const r = await axios.get(`${API}/api/my-reviews`, { headers: { Authorization: `Bearer ${token}` } });
+      const r = await axios.get(`${API}/api/my-reviews`);
       setReviews(r.data);
     } catch { alert('Error submitting review'); }
     finally { setLoading(false); }
@@ -36,25 +28,16 @@ export default function DashboardPage() {
 
   const handleUpgrade = async (plan: string, amount: number) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(`${API}/api/payment/checkout`, { plan, amount }, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.post(`${API}/api/payment/checkout`, { plan, amount });
       alert(`Upgraded to ${plan} plan!`);
-      const r = await axios.get(`${API}/api/me`, { headers: { Authorization: `Bearer ${token}` } });
-      setUser(r.data);
     } catch { alert('Error upgrading'); }
   };
-
-  if (!user) return <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',color:'#6b7280'}}>Loading...</div>;
 
   return (
     <div style={{minHeight:'100vh',background:'#f9fafb'}}>
       <nav style={{background:'#fff',borderBottom:'1px solid #e5e7eb',padding:'14px 32px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-        <span style={{fontWeight:800,fontSize:'18px',color:'#2563eb'}}>Outspark</span>
-        <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
-          <span style={{fontSize:'13px',color:'#6b7280'}}>Hi, {user.name}</span>
-          <span style={{background:'#dbeafe',color:'#1d4ed8',fontSize:'11px',fontWeight:700,padding:'3px 10px',borderRadius:'99px',textTransform:'uppercase'}}>{user.plan}</span>
-          <button onClick={() => { localStorage.clear(); router.push('/'); }} style={{fontSize:'13px',color:'#ef4444',background:'none',border:'none',cursor:'pointer'}}>Logout</button>
-        </div>
+        <a href="/" style={{fontWeight:800,fontSize:'18px',color:'#2563eb',textDecoration:'none'}}>Outspark</a>
+        <a href="/admin" style={{fontSize:'13px',color:'#6b7280',textDecoration:'none',fontWeight:600}}>Admin Panel →</a>
       </nav>
 
       <div style={{maxWidth:'800px',margin:'0 auto',padding:'32px 24px',display:'flex',flexDirection:'column',gap:'24px'}}>
@@ -86,7 +69,7 @@ export default function DashboardPage() {
         </div>
 
         <div style={{background:'#fff',borderRadius:'16px',padding:'28px',border:'1px solid #e5e7eb'}}>
-          <h2 style={{fontSize:'18px',fontWeight:800,color:'#111827',marginBottom:'20px'}}>My Reviews</h2>
+          <h2 style={{fontSize:'18px',fontWeight:800,color:'#111827',marginBottom:'20px'}}>All Reviews</h2>
           {reviews.length === 0 ? (
             <p style={{color:'#9ca3af',fontSize:'13px'}}>No reviews yet. Submit your first review above!</p>
           ) : reviews.map((r:any) => (
@@ -117,9 +100,9 @@ export default function DashboardPage() {
               <div key={plan} style={{border:'1px solid #e5e7eb',borderRadius:'12px',padding:'16px',textAlign:'center'}}>
                 <div style={{fontWeight:700,color:'#111827',marginBottom:'4px',fontSize:'14px'}}>{name}</div>
                 <div style={{fontSize:'22px',fontWeight:800,color:'#2563eb',marginBottom:'14px'}}>{price}</div>
-                <button onClick={() => handleUpgrade(plan,amount)} disabled={user.plan===plan}
-                  style={{width:'100%',background:user.plan===plan?'#f3f4f6':'#2563eb',color:user.plan===plan?'#9ca3af':'#fff',fontWeight:700,padding:'9px',borderRadius:'9px',border:'none',cursor:user.plan===plan?'not-allowed':'pointer',fontSize:'13px'}}>
-                  {user.plan===plan ? 'Current Plan' : 'Upgrade'}
+                <button onClick={() => handleUpgrade(plan,amount)}
+                  style={{width:'100%',background:'#2563eb',color:'#fff',fontWeight:700,padding:'9px',borderRadius:'9px',border:'none',cursor:'pointer',fontSize:'13px'}}>
+                  Upgrade
                 </button>
               </div>
             ))}

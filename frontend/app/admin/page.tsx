@@ -1,12 +1,10 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import axios from 'axios';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function AdminPage() {
-  const router = useRouter();
   const [stats, setStats] = useState<any>(null);
   const [reviews, setReviews] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -15,29 +13,23 @@ export default function AdminPage() {
   const [score, setScore] = useState<{[key:number]:string}>({});
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const role = localStorage.getItem('role');
-    if (!token || role !== 'admin') { router.push('/login'); return; }
-    const headers = { Authorization: `Bearer ${token}` };
-    axios.get(`${API}/api/admin/stats`, { headers }).then(r => setStats(r.data));
-    axios.get(`${API}/api/admin/reviews`, { headers }).then(r => setReviews(r.data));
-    axios.get(`${API}/api/admin/users`, { headers }).then(r => setUsers(r.data));
+    axios.get(`${API}/api/admin/stats`).then(r => setStats(r.data)).catch(() => {});
+    axios.get(`${API}/api/admin/reviews`).then(r => setReviews(r.data)).catch(() => {});
+    axios.get(`${API}/api/admin/users`).then(r => setUsers(r.data)).catch(() => {});
   }, []);
 
   const updateReview = async (id: number, status: string) => {
-    const token = localStorage.getItem('token');
     await axios.patch(`${API}/api/admin/reviews/${id}`, {
       status, feedback: feedback[id] || '', score: parseFloat(score[id]) || null
-    }, { headers: { Authorization: `Bearer ${token}` } });
+    });
     alert('Review updated!');
-    const r = await axios.get(`${API}/api/admin/reviews`, { headers: { Authorization: `Bearer ${token}` } });
+    const r = await axios.get(`${API}/api/admin/reviews`);
     setReviews(r.data);
   };
 
   const deleteUser = async (id: number) => {
     if (!confirm('Delete this user?')) return;
-    const token = localStorage.getItem('token');
-    await axios.delete(`${API}/api/admin/users/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+    await axios.delete(`${API}/api/admin/users/${id}`);
     setUsers(users.filter(u => u.id !== id));
   };
 
@@ -51,10 +43,7 @@ export default function AdminPage() {
     <div style={{minHeight:'100vh',background:'#f9fafb'}}>
       <nav style={{background:'#fff',borderBottom:'1px solid #e5e7eb',padding:'14px 32px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
         <span style={{fontWeight:800,fontSize:'18px',color:'#2563eb'}}>Outspark Admin</span>
-        <button onClick={() => { localStorage.clear(); router.push('/'); }}
-          style={{fontSize:'13px',color:'#ef4444',background:'none',border:'none',cursor:'pointer'}}>
-          Logout
-        </button>
+        <a href="/" style={{fontSize:'13px',color:'#6b7280',textDecoration:'none',fontWeight:600}}>← Back to Home</a>
       </nav>
 
       <div style={{maxWidth:'1100px',margin:'0 auto',padding:'32px 24px',display:'flex',flexDirection:'column',gap:'24px'}}>
